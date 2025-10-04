@@ -1,0 +1,18 @@
+# =================================================================
+# Service Kubernetes pour le frontend
+# =================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+  labels:
+    app: frontend
+spec:
+  type: LoadBalancer  # Exposé publiquement (ou NodePort/Ingress selon config)
+  selector:
+    app: frontend
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+    name: http

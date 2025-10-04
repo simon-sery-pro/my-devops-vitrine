@@ -1,0 +1,22 @@
+# =================================================================
+# ConfigMaps pour configuration non-sensible
+# =================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+data:
+  db_host: "postgres-service.default.svc.cluster.local"
+  db_port: "5432"
+  db_name: "vitrine_db"
+  spring_profile: "production"
+  log_level: "INFO"
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-config
+data:
+  api_url: "http://backend-service/api"
+  environment: "production"

@@ -1,0 +1,71 @@
+<div class="container">
+  <header>
+    <h1>{{ title }}</h1>
+    <p class="subtitle">Projet vitrine DevOps - Full Stack Kubernetes</p>
+  </header>
+
+  <!-- Formulaire de création -->
+  <div class="create-form">
+    <h2>Nouvelle tâche</h2>
+    <input
+      type="text"
+      [(ngModel)]="newTask.title"
+      placeholder="Titre de la tâche"
+      (keyup.enter)="createTask()"
+    />
+    <textarea
+      [(ngModel)]="newTask.description"
+      placeholder="Description (optionnel)"
+    ></textarea>
+    <button (click)="createTask()" class="btn-primary">Ajouter</button>
+  </div>
+
+  <!-- Liste des tâches -->
+  <div class="tasks-container">
+    <h2>Mes tâches ({{ tasks.length }})</h2>
+
+    <div *ngIf="tasks.length === 0" class="empty-state">
+      <p>Aucune tâche pour le moment. Créez-en une ci-dessus !</p>
+    </div>
+
+    <div *ngFor="let task of tasks" class="task-card">
+      <!-- Mode affichage -->
+      <div *ngIf="editingTask?.id !== task.id" class="task-view">
+        <div class="task-header">
+          <input
+            type="checkbox"
+            [checked]="task.completed"
+            (change)="toggleComplete(task)"
+          />
+          <h3 [class.completed]="task.completed">{{ task.title }}</h3>
+        </div>
+        <p class="task-description">{{ task.description || 'Aucune description' }}</p>
+        <div class="task-actions">
+          <button (click)="startEdit(task)" class="btn-edit">Modifier</button>
+          <button (click)="deleteTask(task.id!)" class="btn-delete">Supprimer</button>
+        </div>
+      </div>
+
+      <!-- Mode édition -->
+      <div *ngIf="editingTask?.id === task.id" class="task-edit">
+        <input
+          type="text"
+          [(ngModel)]="editingTask.title"
+          placeholder="Titre"
+        />
+        <textarea
+          [(ngModel)]="editingTask.description"
+          placeholder="Description"
+        ></textarea>
+        <div class="task-actions">
+          <button (click)="saveEdit()" class="btn-primary">Sauvegarder</button>
+          <button (click)="cancelEdit()" class="btn-cancel">Annuler</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>🚀 Déployé sur Kubernetes | CI/CD GitLab | Terraform IaC</p>
+  </footer>
+</div>

@@ -1,0 +1,264 @@
+# =================================================================
+# Pipeline GitLab CI/CD complet pour déploiement Kubernetes
+# Stages: build, test, package, deploy, rollback
+# =================================================================
+
+stages:
+  - build
+  - test
+  - package
+  - deploy
+  - rollback
+
+variables:
+  # Variables globales
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: "/certs"
+  MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository"
+
+  # Registry GitLab
+  REGISTRY: registry.gitlab.com
+  BACKEND_IMAGE: $REGISTRY/$CI_PROJECT_PATH/backend
+  FRONTEND_IMAGE: $REGISTRY/$CI_PROJECT_PATH/frontend
+
+  # Kubernetes
+  KUBECONFIG: /etc/deploy/kubeconfig
+  NAMESPACE: production
+
+# Cache pour accélérer les builds
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - .m2/repository/
+    - app-front/node_modules/
+
+# =================================================================
+# BUILD STAGE
+# =================================================================
+
+build:backend:
+  stage: build
+  image: maven:3.9-eclipse-temurin-17
+  script:
+    - cd app-back
+    - mvn clean compile -DskipTests
+  artifacts:
+    paths:
+      - app-back/target/
+    expire_in: 1 hour
+  only:
+    changes:
+      - app-back/**/*
+      - .gitlab-ci.yml
+
+build:frontend:
+  stage: build
+  image: node:18-alpine
+  script:
+    - cd app-front
+    - npm ci
+    - npm run build --prod
+  artifacts:
+    paths:
+      - app-front/dist/
+    expire_in: 1 hour
+  only:
+    changes:
+      - app-front/**/*
+      - .gitlab-ci.yml
+
+# =================================================================
+# TEST STAGE
+# =================================================================
+
+test:backend:
+  stage: test
+  image: maven:3.9-eclipse-temurin-17
+  script:
+    - cd app-back
+    - mvn test
+    - mvn verify
+  coverage: '/Total.*?([0-9]{1,3})%/'
+  artifacts:
+    reports:
+      junit: app-back/target/surefire-reports/TEST-*.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: app-back/target/site/cobertura/coverage.xml
+  only:
+    changes:
+      - app-back/**/*
+      - .gitlab-ci.yml
+
+test:frontend:
+  stage: test
+  image: node:18-alpine
+  script:
+    - cd app-front
+    - npm ci
+    - npm run test:ci
+    - npm run lint
+  coverage: '/Lines\s*:\s*(\d+\.?\d*)%/'
+  artifacts:
+    reports:
+      junit: app-front/test-results/junit.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: app-front/coverage/cobertura-coverage.xml
+  only:
+    changes:
+      - app-front/**/*
+      - .gitlab-ci.yml
+
+# Scan de sécurité avec Trivy
+security:scan:
+  stage: test
+  image: aquasec/trivy:latest
+  script:
+    - trivy fs --severity HIGH,CRITICAL --exit-code 0 .
+  allow_failure: true
+
+# =================================================================
+# PACKAGE STAGE - Build & Push Docker Images
+# =================================================================
+
+package:backend:
+  stage: package
+  image: docker:24-dind
+  services:
+    - docker:24-dind
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $REGISTRY
+  script:
+    - cd app-back
+    - docker build -t $BACKEND_IMAGE:$CI_COMMIT_SHORT_SHA .
+    - docker tag $BACKEND_IMAGE:$CI_COMMIT_SHORT_SHA $BACKEND_IMAGE:latest
+    - docker push $BACKEND_IMAGE:$CI_COMMIT_SHORT_SHA
+    - docker push $BACKEND_IMAGE:latest
+  only:
+    - main
+    - develop
+
+package:frontend:
+  stage: package
+  image: docker:24-dind
+  services:
+    - docker:24-dind
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $REGISTRY
+  script:
+    - cd app-front
+    - docker build -t $FRONTEND_IMAGE:$CI_COMMIT_SHORT_SHA .
+    - docker tag $FRONTEND_IMAGE:$CI_COMMIT_SHORT_SHA $FRONTEND_IMAGE:latest
+    - docker push $FRONTEND_IMAGE:$CI_COMMIT_SHORT_SHA
+    - docker push $FRONTEND_IMAGE:latest
+  only:
+    - main
+    - develop
+
+# =================================================================
+# DEPLOY STAGE - Kubernetes Deployment
+# =================================================================
+
+deploy:backend:
+  stage: deploy
+  image: bitnami/kubectl:latest
+  before_script:
+    - mkdir -p /etc/deploy
+    - echo "$KUBE_CONFIG" | base64 -d > $KUBECONFIG
+    - kubectl config use-context production
+  script:
+    - kubectl set image deployment/backend backend=$BACKEND_IMAGE:$CI_COMMIT_SHORT_SHA -n $NAMESPACE
+    - kubectl rollout status deployment/backend -n $NAMESPACE --timeout=5m
+  environment:
+    name: production
+    url: https://api.example.com
+  only:
+    - main
+  when: manual  # Déploiement manuel pour sécurité
+
+deploy:frontend:
+  stage: deploy
+  image: bitnami/kubectl:latest
+  before_script:
+    - mkdir -p /etc/deploy
+    - echo "$KUBE_CONFIG" | base64 -d > $KUBECONFIG
+    - kubectl config use-context production
+  script:
+    - kubectl set image deployment/frontend frontend=$FRONTEND_IMAGE:$CI_COMMIT_SHORT_SHA -n $NAMESPACE
+    - kubectl rollout status deployment/frontend -n $NAMESPACE --timeout=5m
+  environment:
+    name: production
+    url: https://app.example.com
+  only:
+    - main
+  when: manual
+
+# Déploiement avec Helm (alternative)
+deploy:helm:
+  stage: deploy
+  image: alpine/helm:latest
+  before_script:
+    - mkdir -p /etc/deploy
+    - echo "$KUBE_CONFIG" | base64 -d > $KUBECONFIG
+  script:
+    - helm upgrade --install backend k8s/helm/backend
+        --set image.tag=$CI_COMMIT_SHORT_SHA
+        --namespace $NAMESPACE
+    - helm upgrade --install frontend k8s/helm/frontend
+        --set image.tag=$CI_COMMIT_SHORT_SHA
+        --namespace $NAMESPACE
+  only:
+    - main
+  when: manual
+
+# =================================================================
+# ROLLBACK STAGE - Retour arrière en cas de problème
+# =================================================================
+
+rollback:backend:
+  stage: rollback
+  image: bitnami/kubectl:latest
+  before_script:
+    - mkdir -p /etc/deploy
+    - echo "$KUBE_CONFIG" | base64 -d > $KUBECONFIG
+  script:
+    - kubectl rollout undo deployment/backend -n $NAMESPACE
+    - kubectl rollout status deployment/backend -n $NAMESPACE
+  environment:
+    name: production
+  only:
+    - main
+  when: manual
+
+rollback:frontend:
+  stage: rollback
+  image: bitnami/kubectl:latest
+  before_script:
+    - mkdir -p /etc/deploy
+    - echo "$KUBE_CONFIG" | base64 -d > $KUBECONFIG
+  script:
+    - kubectl rollout undo deployment/frontend -n $NAMESPACE
+    - kubectl rollout status deployment/frontend -n $NAMESPACE
+  environment:
+    name: production
+  only:
+    - main
+  when: manual
+
+# =================================================================
+# Notifications (optionnel)
+# =================================================================
+
+notify:slack:
+  stage: .post
+  image: curlimages/curl:latest
+  script:
+    - |
+      curl -X POST -H 'Content-type: application/json' \
+        --data "{\"text\":\"✅ Pipeline $CI_PIPELINE_ID terminé avec succès pour $CI_COMMIT_REF_NAME\"}" \
+        $SLACK_WEBHOOK_URL
+  only:
+    - main
+  when: on_success
+  allow_failure: true

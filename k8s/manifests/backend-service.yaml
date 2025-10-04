@@ -1,0 +1,19 @@
+# =================================================================
+# Service Kubernetes pour le backend
+# =================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  labels:
+    app: backend
+spec:
+  type: ClusterIP  # Accessible uniquement depuis le cluster
+  selector:
+    app: backend
+  ports:
+  - protocol: TCP
+    port: 80         # Port exposé par le service
+    targetPort: 8080 # Port du container
+    name: http
+  sessionAffinity: None

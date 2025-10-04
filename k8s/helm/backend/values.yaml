@@ -1,0 +1,96 @@
+# =================================================================
+# Values par défaut pour le chart Helm backend
+# =================================================================
+
+replicaCount: 2
+
+image:
+  repository: registry.gitlab.com/yourproject/backend
+  pullPolicy: Always
+  tag: "latest"
+
+imagePullSecrets:
+  - name: gitlab-registry-secret
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: false
+  annotations: {}
+  name: ""
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8080"
+  prometheus.io/path: "/actuator/prometheus"
+
+podSecurityContext: {}
+
+securityContext: {}
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+
+ingress:
+  enabled: false
+  className: "nginx"
+  annotations: {}
+  hosts:
+    - host: api.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 1Gi
+  requests:
+    cpu: 250m
+    memory: 512Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+
+livenessProbe:
+  httpGet:
+    path: /actuator/health/liveness
+    port: 8080
+  initialDelaySeconds: 60
+  periodSeconds: 10
+
+readinessProbe:
+  httpGet:
+    path: /actuator/health/readiness
+    port: 8080
+  initialDelaySeconds: 30
+  periodSeconds: 5
+
+# Variables d'environnement
+env:
+  SPRING_PROFILES_ACTIVE: production
+  SERVER_PORT: "8080"
+
+# ConfigMap
+config:
+  db_host: postgres-service
+  db_port: "5432"
+  db_name: vitrine_db
+
+# Secrets (à créer séparément)
+secrets:
+  db_password: ""
+  jwt_secret: ""
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

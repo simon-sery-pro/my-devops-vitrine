@@ -1,0 +1,209 @@
+/* =================================================================
+   Styles pour l'application Task Manager
+   ================================================================= */
+
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 40px;
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 10px;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 2em;
+}
+
+.subtitle {
+  margin: 10px 0 0 0;
+  opacity: 0.9;
+}
+
+/* Formulaire de création */
+.create-form {
+  background: white;
+  padding: 25px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  margin-bottom: 30px;
+}
+
+.create-form h2 {
+  margin-top: 0;
+  color: #333;
+}
+
+.create-form input,
+.create-form textarea {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 15px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.create-form textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+/* Boutons */
+button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.btn-primary {
+  background-color: #667eea;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #5568d3;
+}
+
+.btn-edit {
+  background-color: #48bb78;
+  color: white;
+  margin-right: 10px;
+}
+
+.btn-edit:hover {
+  background-color: #38a169;
+}
+
+.btn-delete {
+  background-color: #f56565;
+  color: white;
+}
+
+.btn-delete:hover {
+  background-color: #e53e3e;
+}
+
+.btn-cancel {
+  background-color: #cbd5e0;
+  color: #2d3748;
+}
+
+.btn-cancel:hover {
+  background-color: #a0aec0;
+}
+
+/* Liste des tâches */
+.tasks-container {
+  margin-top: 30px;
+}
+
+.tasks-container h2 {
+  color: #333;
+  margin-bottom: 20px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px;
+  color: #718096;
+  font-style: italic;
+}
+
+.task-card {
+  background: white;
+  padding: 20px;
+  margin-bottom: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.task-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 10px;
+}
+
+.task-header input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.task-header h3 {
+  margin: 0;
+  color: #2d3748;
+  flex: 1;
+}
+
+.task-header h3.completed {
+  text-decoration: line-through;
+  color: #a0aec0;
+}
+
+.task-description {
+  margin: 10px 0;
+  color: #718096;
+  padding-left: 35px;
+}
+
+.task-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.task-edit input,
+.task-edit textarea {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  box-sizing: border-box;
+}
+
+.task-edit textarea {
+  min-height: 60px;
+}
+
+/* Footer */
+footer {
+  text-align: center;
+  margin-top: 50px;
+  padding: 20px;
+  color: #718096;
+  border-top: 1px solid #e2e8f0;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .container {
+    padding: 10px;
+  }
+
+  header h1 {
+    font-size: 1.5em;
+  }
+
+  .task-actions {
+    flex-direction: column;
+  }
+
+  button {
+    width: 100%;
+  }
+}

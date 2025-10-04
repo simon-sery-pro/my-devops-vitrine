@@ -1,0 +1,13 @@
+apiVersion: v2
+name: backend
+description: Helm chart pour le backend Java Spring Boot
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - java
+  - springboot
+  - api
+maintainers:
+  - name: DevOps Engineer
+    email: devops@example.com
