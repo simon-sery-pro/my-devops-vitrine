@@ -27,7 +27,7 @@ spec:
     spec:
       containers:
       - name: backend
-        image: registry.gitlab.com/yourproject/backend:latest
+        image: ghcr.io/your-username/my-devops-vitrine/backend:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
@@ -80,4 +80,4 @@ spec:
 
       # Image pull secret pour registry privé GitLab
       imagePullSecrets:
-      - name: gitlab-registry-secret
+      - name: ghcr-secret

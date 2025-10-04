@@ -5,12 +5,12 @@
 replicaCount: 2
 
 image:
-  repository: registry.gitlab.com/yourproject/backend
+  repository: ghcr.io/your-username/my-devops-vitrine/backend
   pullPolicy: Always
   tag: "latest"
 
 imagePullSecrets:
-  - name: gitlab-registry-secret
+  - name: ghcr-secret
 
 nameOverride: ""
 fullnameOverride: ""

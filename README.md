@@ -1,11 +1,11 @@
 # 🚀 DevOps Vitrine - Full-Stack Kubernetes Project
 
-Projet vitrine démontrant les compétences **DevOps / SRE** avec déploiement d'une application full-stack sur Kubernetes, Infrastructure as Code (Terraform), CI/CD GitLab, et observabilité complète.
+Projet vitrine démontrant les compétences **DevOps / SRE** avec déploiement d'une application full-stack sur Kubernetes, Infrastructure as Code (Terraform), CI/CD GitHub Actions, et observabilité complète.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Kubernetes](https://img.shields.io/badge/Kubernetes-1.28-326CE5?logo=kubernetes)
 ![Terraform](https://img.shields.io/badge/Terraform-1.0+-7B42BC?logo=terraform)
-![GitLab CI](https://img.shields.io/badge/GitLab%20CI-CD-FCA121?logo=gitlab)
+![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-CI/CD-2088FF?logo=github-actions)
 
 ## 📋 Table des matières
 
@@ -25,7 +25,7 @@ Projet vitrine démontrant les compétences **DevOps / SRE** avec déploiement d
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                       GitLab CI/CD                          │
+│                     GitHub Actions CI/CD                    │
 │  (Build → Test → Package → Deploy → Monitoring)            │
 └─────────────────────────────────────────────────────────────┘
                               ↓
@@ -68,8 +68,8 @@ Projet vitrine démontrant les compétences **DevOps / SRE** avec déploiement d
 - **Containerization** : Docker multi-stage
 
 ### CI/CD & Observabilité
-- **CI/CD** : GitLab CI/CD
-- **Registry** : GitLab Container Registry
+- **CI/CD** : GitHub Actions
+- **Registry** : GitHub Container Registry (GHCR)
 - **Monitoring** : Prometheus + Grafana
 - **Logging** : Spring Boot Actuator
 - **Security** : Trivy scanner
@@ -95,8 +95,10 @@ my-devops-vitrine/
 │   │   └── frontend/
 │   └── README.md
 │
-├── ci-cd/                    # Pipeline GitLab CI/CD
-│   ├── .gitlab-ci.yml       # Pipeline complet
+├── .github/workflows/        # GitHub Actions CI/CD
+│   ├── backend-ci.yml       # Pipeline backend
+│   ├── frontend-ci.yml      # Pipeline frontend
+│   ├── terraform-ci.yml     # Pipeline infrastructure
 │   └── README.md
 │
 ├── app-back/                 # Backend Java Spring Boot
@@ -125,7 +127,7 @@ my-devops-vitrine/
 - [Helm](https://helm.sh/docs/intro/install/) >= 3.0
 - [AWS CLI](https://aws.amazon.com/cli/) (configuré avec credentials)
 - [Docker](https://docs.docker.com/get-docker/) >= 24.0
-- [GitLab](https://gitlab.com) account avec Runner actif
+- Compte [GitHub](https://github.com) avec Actions activé
 
 ### Comptes cloud
 
@@ -159,11 +161,11 @@ aws eks update-kubeconfig --region eu-west-1 --name devops-vitrine-cluster
 ```bash
 cd k8s
 
-# Créer les secrets
-kubectl create secret docker-registry gitlab-registry-secret \
-  --docker-server=registry.gitlab.com \
-  --docker-username=<your-username> \
-  --docker-password=<your-token>
+# Créer les secrets (pour GHCR)
+kubectl create secret docker-registry ghcr-secret \
+  --docker-server=ghcr.io \
+  --docker-username=<your-github-username> \
+  --docker-password=<your-github-token>
 
 # Déployer
 kubectl apply -f manifests/
@@ -217,42 +219,38 @@ npm start
 
 ## 🔄 CI/CD Pipeline
 
-Le pipeline GitLab CI/CD automatise :
+Le pipeline GitHub Actions automatise :
 
-### Stages
+### Workflows
 
-1. **BUILD** 🔨
-   - Compilation backend (Maven)
-   - Build frontend (npm)
+1. **Backend CI/CD** ([backend-ci.yml](.github/workflows/backend-ci.yml))
+   - Build & Test (Maven, JUnit)
+   - Security Scan (Trivy)
+   - Docker Build & Push (GHCR)
+   - Deploy Kubernetes
 
-2. **TEST** ✅
-   - Tests unitaires (JUnit, Jasmine)
-   - Coverage reports
-   - Security scan (Trivy)
+2. **Frontend CI/CD** ([frontend-ci.yml](.github/workflows/frontend-ci.yml))
+   - Build & Test (npm, Jasmine)
+   - Security Scan
+   - Docker Build & Push
+   - Deploy Kubernetes
 
-3. **PACKAGE** 📦
-   - Build images Docker
-   - Push vers GitLab Registry
-
-4. **DEPLOY** 🚀
-   - Déploiement Kubernetes
-   - Rolling updates
-   - Health checks
-
-5. **ROLLBACK** ⏮️
-   - Retour arrière manuel si nécessaire
+3. **Terraform Infrastructure** ([terraform-ci.yml](.github/workflows/terraform-ci.yml))
+   - Terraform Plan
+   - Terraform Apply
+   - tfsec Security Scan
 
 ### Configuration
 
-Variables à définir dans **GitLab > Settings > CI/CD > Variables** :
+Secrets à définir dans **Settings > Secrets and variables > Actions** :
 
-| Variable | Description |
-|----------|-------------|
-| `CI_REGISTRY_USER` | Username GitLab |
-| `CI_REGISTRY_PASSWORD` | Token GitLab |
+| Secret | Description |
+|--------|-------------|
+| `AWS_ACCESS_KEY_ID` | AWS Access Key |
+| `AWS_SECRET_ACCESS_KEY` | AWS Secret Key |
 | `KUBE_CONFIG` | Kubeconfig base64 |
 
-Voir [ci-cd/README.md](ci-cd/README.md) pour plus de détails.
+Voir [.github/workflows/README.md](.github/workflows/README.md) pour plus de détails.
 
 ## 📊 Observabilité
 
@@ -333,7 +331,7 @@ Chaque dossier contient un README.md détaillé :
 
 - [Infrastructure (Terraform)](infra/README.md)
 - [Kubernetes](k8s/README.md)
-- [CI/CD Pipeline](ci-cd/README.md)
+- [CI/CD Pipeline](.github/workflows/README.md)
 - [Backend Java](app-back/README.md)
 - [Frontend Angular](app-front/README.md)
 
@@ -343,7 +341,8 @@ Chaque dossier contient un README.md détaillé :
 - [Kubernetes Documentation](https://kubernetes.io/docs/)
 - [Spring Boot Actuator](https://docs.spring.io/spring-boot/docs/current/reference/html/actuator.html)
 - [Angular Documentation](https://angular.io/docs)
-- [GitLab CI/CD](https://docs.gitlab.com/ee/ci/)
+- [GitHub Actions](https://docs.github.com/en/actions)
+- [GitHub Container Registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)
 
 ## 🤝 Contribution
 

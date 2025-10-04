@@ -26,7 +26,7 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: registry.gitlab.com/yourproject/frontend:latest
+        image: ghcr.io/your-username/my-devops-vitrine/frontend:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 80
@@ -69,4 +69,4 @@ spec:
             memory: 256Mi
 
       imagePullSecrets:
-      - name: gitlab-registry-secret
+      - name: ghcr-secret
