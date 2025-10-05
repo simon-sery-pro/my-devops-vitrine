@@ -23,7 +23,7 @@ services:
       - SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.h2.Driver
       - SPRING_JPA_HIBERNATE_DDL_AUTO=create-drop
       # OpenTelemetry
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
       - OTEL_SERVICE_NAME=vitrine-backend
       - OTEL_RESOURCE_ATTRIBUTES=deployment.environment=dev
     healthcheck:
@@ -109,6 +109,7 @@ services:
   tempo:
     image: grafana/tempo:2.3.1
     container_name: tempo
+    user: "0"
     command: ["-config.file=/etc/tempo.yaml"]
     volumes:
       - ./observability/tempo/tempo-config.yaml:/etc/tempo.yaml
@@ -124,6 +125,7 @@ services:
   loki:
     image: grafana/loki:2.9.3
     container_name: loki
+    user: "0"  # Run as root pour éviter les problèmes de permissions
     command: ["-config.file=/etc/loki/local-config.yaml"]
     volumes:
       - ./observability/loki/loki-config.yaml:/etc/loki/local-config.yaml
@@ -137,6 +139,7 @@ services:
   mimir:
     image: grafana/mimir:2.11.0
     container_name: mimir
+    user: "0"
     command: ["-config.file=/etc/mimir.yaml"]
     volumes:
       - ./observability/mimir/mimir-config.yaml:/etc/mimir.yaml
@@ -148,7 +151,7 @@ services:
 
   # Grafana - Visualisation
   grafana:
-    image: grafana/grafana:10.2.3
+    image: grafana/grafana:12.2.0
     container_name: grafana
     environment:
       - GF_AUTH_ANONYMOUS_ENABLED=true

@@ -66,25 +66,14 @@ logging:
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
 
-# Configuration OpenTelemetry
+# Configuration OpenTelemetry (via ObservabilityConfig.java)
 otel:
-  sdk:
-    disabled: false
-  resource:
-    attributes:
-      service.name: vitrine-backend
-      service.version: 1.0.0
-      deployment.environment: ${ENVIRONMENT:dev}
   exporter:
     otlp:
-      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://otel-collector:4318}
-      protocol: http/protobuf
-  traces:
-    exporter: otlp
-  metrics:
-    exporter: otlp
-  logs:
-    exporter: otlp
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://otel-collector:4317}
+
+deployment:
+  environment: ${ENVIRONMENT:dev}
 
 ---
 # Profil DEVELOPMENT

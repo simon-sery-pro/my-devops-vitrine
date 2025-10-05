@@ -51,11 +51,21 @@
             <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
 
-        <!-- OpenTelemetry pour observabilité complète -->
+        <!-- OpenTelemetry instrumentation automatique via Java Agent -->
+        <!-- Note: Pour Spring Boot 3, utiliser le Java Agent au runtime -->
+        <!-- ou Micrometer Tracing avec OTel Bridge -->
+
+        <!-- Micrometer Tracing avec OpenTelemetry -->
         <dependency>
-            <groupId>io.opentelemetry.instrumentation</groupId>
-            <artifactId>opentelemetry-spring-boot-starter</artifactId>
-            <version>2.0.0</version>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-tracing-bridge-otel</artifactId>
+        </dependency>
+
+        <!-- OpenTelemetry SDK -->
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-sdk</artifactId>
+            <version>${opentelemetry.version}</version>
         </dependency>
 
         <!-- OpenTelemetry Exporter OTLP -->
@@ -65,7 +75,14 @@
             <version>${opentelemetry.version}</version>
         </dependency>
 
-        <!-- Micrometer Bridge pour OTel -->
+        <!-- OpenTelemetry Semantic Conventions -->
+        <dependency>
+            <groupId>io.opentelemetry.semconv</groupId>
+            <artifactId>opentelemetry-semconv</artifactId>
+            <version>1.23.1-alpha</version>
+        </dependency>
+
+        <!-- Micrometer Registry pour OTel -->
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-registry-otlp</artifactId>
