@@ -17,12 +17,13 @@ COPY src ./src
 RUN mvn clean package -DskipTests -B
 
 # Stage 2: Runtime avec JRE minimal
-FROM eclipse-temurin:17-jre-alpine
+# Utilise l'image standard (non-alpine) pour compatibilité multi-architecture
+FROM eclipse-temurin:17-jre
 
 WORKDIR /app
 
 # Créer un utilisateur non-root pour sécurité
-RUN addgroup -S spring && adduser -S spring -G spring
+RUN groupadd -r spring && useradd -r -g spring spring
 USER spring:spring
 
 # Copier le JAR depuis le stage builder
@@ -34,9 +35,9 @@ EXPOSE 8080
 # Variables d'environnement
 ENV JAVA_OPTS="-Xms256m -Xmx512m"
 
-# Health check
+# Health check (curl disponible dans l'image standard)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health/liveness || exit 1
+  CMD curl -f http://localhost:8080/actuator/health/liveness || exit 1
 
 # Point d'entrée
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
