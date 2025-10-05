@@ -71,3 +71,4 @@ echo "  • Logs frontend:     docker compose logs -f frontend"
 echo "  • Arrêter:           docker compose down"
 echo "  • Rebuild:           docker compose up -d --build"
 echo ""
+
