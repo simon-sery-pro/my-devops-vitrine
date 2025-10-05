@@ -85,11 +85,15 @@ my-devops-vitrine/
 │   └── README.md
 │
 ├── k8s/                      # Kubernetes manifests & Helm
-│   ├── manifests/           # YAML Kubernetes bruts
+│   ├── manifests/           # YAML Kubernetes pour production
 │   │   ├── backend-deployment.yaml
 │   │   ├── frontend-deployment.yaml
 │   │   ├── configmap.yaml
 │   │   └── secret.yaml
+│   ├── local/               # YAML pour développement local
+│   │   ├── backend-deployment-local.yaml
+│   │   ├── frontend-deployment-local.yaml
+│   │   └── README.md
 │   ├── helm/                # Charts Helm
 │   │   ├── backend/
 │   │   └── frontend/
@@ -100,6 +104,11 @@ my-devops-vitrine/
 │   ├── frontend-ci.yml      # Pipeline frontend
 │   ├── terraform-ci.yml     # Pipeline infrastructure
 │   └── README.md
+│
+├── scripts/                  # Scripts utilitaires
+│   ├── deploy-local.sh      # Déploiement local Minikube
+│   ├── cleanup-local.sh     # Nettoyage environnement local
+│   └── dev-with-docker-compose.sh  # Démarrage Docker Compose
 │
 ├── app-back/                 # Backend Java Spring Boot
 │   ├── src/
@@ -114,6 +123,7 @@ my-devops-vitrine/
 │   ├── nginx.conf
 │   └── README.md
 │
+├── docker-compose.yml        # Docker Compose pour dev local
 ├── README.md                 # Ce fichier
 └── .gitignore
 ```
@@ -136,7 +146,45 @@ my-devops-vitrine/
 
 ## 🚀 Démarrage Rapide
 
-### 1. Provisionner l'infrastructure
+### Option 1 : Développement Local (recommandé pour débuter)
+
+#### A. Avec script automatique Minikube
+
+```bash
+# Déploiement complet en une commande
+./scripts/deploy-local.sh
+
+# Accès : http://<minikube-ip>:30081
+```
+
+#### B. Avec Docker Compose (encore plus rapide)
+
+```bash
+# Lancer l'environnement dev
+./scripts/dev-with-docker-compose.sh
+
+# Accès : http://localhost
+```
+
+Voir [k8s/local/README.md](k8s/local/README.md) pour plus de détails.
+
+### Option 2 : Test local sans Kubernetes
+
+```bash
+# Backend
+cd app-back
+mvn spring-boot:run
+# → http://localhost:8080
+
+# Frontend (dans un autre terminal)
+cd app-front
+npm install && npm start
+# → http://localhost:4200
+```
+
+### Option 3 : Déploiement Production (AWS EKS)
+
+#### 1. Provisionner l'infrastructure
 
 ```bash
 cd infra
@@ -154,9 +202,9 @@ terraform apply
 aws eks update-kubeconfig --region eu-west-1 --name devops-vitrine-cluster
 ```
 
-### 2. Déployer l'application
+#### 2. Déployer l'application
 
-#### Option A : Avec kubectl (manifests)
+##### A. Avec kubectl (manifests)
 
 ```bash
 cd k8s
@@ -171,7 +219,7 @@ kubectl create secret docker-registry ghcr-secret \
 kubectl apply -f manifests/
 ```
 
-#### Option B : Avec Helm (recommandé)
+##### B. Avec Helm (recommandé)
 
 ```bash
 cd k8s
@@ -185,7 +233,7 @@ helm install frontend helm/frontend \
   --set image.tag=latest
 ```
 
-### 3. Vérifier le déploiement
+#### 3. Vérifier le déploiement
 
 ```bash
 # Vérifier les pods
@@ -198,24 +246,6 @@ kubectl get svc
 kubectl get svc frontend-service
 ```
 
-### 4. Tester localement (développement)
-
-#### Backend
-
-```bash
-cd app-back
-mvn spring-boot:run
-# → http://localhost:8080
-```
-
-#### Frontend
-
-```bash
-cd app-front
-npm install
-npm start
-# → http://localhost:4200
-```
 
 ## 🔄 CI/CD Pipeline
 

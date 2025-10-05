@@ -1,0 +1,105 @@
+# =================================================================
+# Deployment Kubernetes LOCAL pour le backend Java Spring Boot
+# Configuration adaptée pour Minikube / environnement local
+# =================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: default
+  labels:
+    app: backend
+    tier: api
+    environment: local
+spec:
+  replicas: 1  # 1 seul replica pour local
+  selector:
+    matchLabels:
+      app: backend
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: backend
+        tier: api
+        environment: local
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/actuator/prometheus"
+    spec:
+      containers:
+      - name: backend
+        # Image locale construite avec eval $(minikube docker-env)
+        image: vitrine-backend:local
+        imagePullPolicy: Never  # Utilise l'image locale du cache Docker
+        ports:
+        - containerPort: 8080
+          name: http
+
+        # Variables d'environnement pour dev local
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "dev"
+        - name: SERVER_PORT
+          value: "8080"
+        # H2 database en mémoire pour dev
+        - name: SPRING_DATASOURCE_URL
+          value: "jdbc:h2:mem:testdb"
+        - name: SPRING_DATASOURCE_DRIVER_CLASS_NAME
+          value: "org.h2.Driver"
+        - name: SPRING_JPA_HIBERNATE_DDL_AUTO
+          value: "create-drop"
+
+        # Health checks
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8080
+          initialDelaySeconds: 20
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+
+        # Ressources minimales pour local
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+
+---
+# Service pour backend
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  namespace: default
+  labels:
+    app: backend
+    environment: local
+spec:
+  type: NodePort  # NodePort pour accès local
+  selector:
+    app: backend
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8080
+    nodePort: 30080  # Port fixe pour accès via minikube
+    name: http

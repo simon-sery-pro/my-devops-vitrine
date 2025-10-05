@@ -1,0 +1,82 @@
+# =================================================================
+# Docker Compose pour développement local
+# Alternative rapide à Kubernetes pour tester l'application
+# =================================================================
+
+version: '3.8'
+
+services:
+  # Backend Java Spring Boot
+  backend:
+    build:
+      context: ./app-back
+      dockerfile: Dockerfile
+    container_name: vitrine-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - SERVER_PORT=8080
+      # H2 database en mémoire pour dev
+      - SPRING_DATASOURCE_URL=jdbc:h2:mem:testdb
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.h2.Driver
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=create-drop
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - vitrine-network
+
+  # Frontend Angular avec Nginx
+  frontend:
+    build:
+      context: ./app-front
+      dockerfile: Dockerfile
+    container_name: vitrine-frontend
+    ports:
+      - "80:80"
+    environment:
+      - API_URL=http://backend:8080
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - vitrine-network
+
+  # PostgreSQL (optionnel, pour tester en mode production)
+  postgres:
+    image: postgres:15-alpine
+    container_name: vitrine-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=vitrine_db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - vitrine-network
+    profiles:
+      - with-postgres  # Activé uniquement avec --profile with-postgres
+
+networks:
+  vitrine-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
