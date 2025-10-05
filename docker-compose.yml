@@ -17,16 +17,24 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=dev
       - SERVER_PORT=8080
+      - ENVIRONMENT=dev
       # H2 database en mémoire pour dev
       - SPRING_DATASOURCE_URL=jdbc:h2:mem:testdb
       - SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.h2.Driver
       - SPRING_JPA_HIBERNATE_DDL_AUTO=create-drop
+      # OpenTelemetry
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_SERVICE_NAME=vitrine-backend
+      - OTEL_RESOURCE_ATTRIBUTES=deployment.environment=dev
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+    depends_on:
+      otel-collector:
+        condition: service_started
     networks:
       - vitrine-network
 
@@ -74,9 +82,99 @@ services:
     profiles:
       - with-postgres  # Activé uniquement avec --profile with-postgres
 
+  # =================================================================
+  # Stack Observabilité - OpenTelemetry + LGTM
+  # =================================================================
+
+  # OpenTelemetry Collector - Gateway centrale
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.92.0
+    container_name: otel-collector
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./observability/otel-collector/otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+      - "8888:8888"   # Prometheus metrics du collector
+      - "8889:8889"   # Prometheus exporter metrics
+    depends_on:
+      - tempo
+      - loki
+      - mimir
+    networks:
+      - vitrine-network
+
+  # Grafana Tempo - Distributed tracing
+  tempo:
+    image: grafana/tempo:2.3.1
+    container_name: tempo
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes:
+      - ./observability/tempo/tempo-config.yaml:/etc/tempo.yaml
+      - tempo-data:/tmp/tempo
+    ports:
+      - "3200:3200"   # Tempo HTTP
+      - "4317"        # OTLP gRPC
+      - "4318"        # OTLP HTTP
+    networks:
+      - vitrine-network
+
+  # Grafana Loki - Log aggregation
+  loki:
+    image: grafana/loki:2.9.3
+    container_name: loki
+    command: ["-config.file=/etc/loki/local-config.yaml"]
+    volumes:
+      - ./observability/loki/loki-config.yaml:/etc/loki/local-config.yaml
+      - loki-data:/tmp/loki
+    ports:
+      - "3100:3100"   # Loki HTTP
+    networks:
+      - vitrine-network
+
+  # Grafana Mimir - Metrics storage
+  mimir:
+    image: grafana/mimir:2.11.0
+    container_name: mimir
+    command: ["-config.file=/etc/mimir.yaml"]
+    volumes:
+      - ./observability/mimir/mimir-config.yaml:/etc/mimir.yaml
+      - mimir-data:/tmp/mimir
+    ports:
+      - "9009:9009"   # Mimir HTTP
+    networks:
+      - vitrine-network
+
+  # Grafana - Visualisation
+  grafana:
+    image: grafana/grafana:10.2.3
+    container_name: grafana
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_INSTALL_PLUGINS=grafana-clock-panel
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./observability/grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+      - ./observability/grafana/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml
+    ports:
+      - "3000:3000"   # Grafana UI
+    depends_on:
+      - tempo
+      - loki
+      - mimir
+    networks:
+      - vitrine-network
+
 networks:
   vitrine-network:
     driver: bridge
 
 volumes:
   postgres-data:
+  tempo-data:
+  loki-data:
+  mimir-data:
+  grafana-data:

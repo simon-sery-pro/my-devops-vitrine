@@ -1,0 +1,124 @@
+# =================================================================
+# Configuration OpenTelemetry Collector
+# Gateway centrale pour recevoir et router les données d'observabilité
+# =================================================================
+
+receivers:
+  # Récepteur OTLP (OpenTelemetry Protocol) sur HTTP et gRPC
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+        cors:
+          allowed_origins:
+            - "http://*"
+            - "https://*"
+
+  # Récepteur Prometheus (pour scraper les métriques /metrics)
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'vitrine-backend'
+          scrape_interval: 15s
+          static_configs:
+            - targets: ['backend:8080']
+              labels:
+                service: 'vitrine-backend'
+                environment: 'dev'
+
+processors:
+  # Batch processor pour optimiser l'envoi
+  batch:
+    timeout: 10s
+    send_batch_size: 1024
+
+  # Ajouter des attributs aux ressources
+  resource:
+    attributes:
+      - key: cluster.name
+        value: devops-vitrine
+        action: upsert
+      - key: deployment.environment
+        from_attribute: environment
+        action: insert
+
+  # Transformer et filtrer les données
+  attributes:
+    actions:
+      - key: http.request.header.authorization
+        action: delete  # Supprimer les headers sensibles
+      - key: http.request.header.cookie
+        action: delete
+
+  # Memory limiter pour éviter les OOM
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 512
+    spike_limit_mib: 128
+
+exporters:
+  # Exporter vers Tempo (traces)
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+
+  # Exporter vers Loki (logs)
+  loki:
+    endpoint: http://loki:3100/loki/api/v1/push
+    labels:
+      attributes:
+        service.name: "service_name"
+        level: "severity"
+      resource:
+        deployment.environment: "environment"
+
+  # Exporter vers Mimir (métriques)
+  otlphttp/mimir:
+    endpoint: http://mimir:9009/otlp
+    tls:
+      insecure: true
+
+  # Prometheus Remote Write vers Mimir (alternative)
+  prometheusremotewrite:
+    endpoint: http://mimir:9009/api/v1/push
+    tls:
+      insecure: true
+
+  # Debug exporter (pour développement)
+  logging:
+    loglevel: debug
+    sampling_initial: 5
+    sampling_thereafter: 200
+
+service:
+  pipelines:
+    # Pipeline pour les traces
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch, resource, attributes]
+      exporters: [otlp/tempo, logging]
+
+    # Pipeline pour les métriques
+    metrics:
+      receivers: [otlp, prometheus]
+      processors: [memory_limiter, batch, resource]
+      exporters: [otlphttp/mimir, logging]
+
+    # Pipeline pour les logs
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch, resource, attributes]
+      exporters: [loki, logging]
+
+  # Extensions
+  extensions: []
+
+  # Telemetry du collector lui-même
+  telemetry:
+    logs:
+      level: info
+    metrics:
+      address: 0.0.0.0:8888
