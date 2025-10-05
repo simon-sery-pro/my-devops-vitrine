@@ -23,7 +23,6 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <opentelemetry.version>1.34.1</opentelemetry.version>
     </properties>
 
     <dependencies>
@@ -51,42 +50,10 @@
             <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
 
-        <!-- OpenTelemetry instrumentation automatique via Java Agent -->
-        <!-- Note: Pour Spring Boot 3, utiliser le Java Agent au runtime -->
-        <!-- ou Micrometer Tracing avec OTel Bridge -->
-
-        <!-- Micrometer Tracing avec OpenTelemetry -->
-        <dependency>
-            <groupId>io.micrometer</groupId>
-            <artifactId>micrometer-tracing-bridge-otel</artifactId>
-        </dependency>
-
-        <!-- OpenTelemetry SDK -->
-        <dependency>
-            <groupId>io.opentelemetry</groupId>
-            <artifactId>opentelemetry-sdk</artifactId>
-            <version>${opentelemetry.version}</version>
-        </dependency>
-
-        <!-- OpenTelemetry Exporter OTLP -->
-        <dependency>
-            <groupId>io.opentelemetry</groupId>
-            <artifactId>opentelemetry-exporter-otlp</artifactId>
-            <version>${opentelemetry.version}</version>
-        </dependency>
-
-        <!-- OpenTelemetry Semantic Conventions -->
-        <dependency>
-            <groupId>io.opentelemetry.semconv</groupId>
-            <artifactId>opentelemetry-semconv</artifactId>
-            <version>1.23.1-alpha</version>
-        </dependency>
-
-        <!-- Micrometer Registry pour OTel -->
-        <dependency>
-            <groupId>io.micrometer</groupId>
-            <artifactId>micrometer-registry-otlp</artifactId>
-        </dependency>
+        <!-- OpenTelemetry Java Agent - Auto-instrumentation -->
+        <!-- Le Java Agent est téléchargé automatiquement dans le Dockerfile -->
+        <!-- Aucune dépendance supplémentaire nécessaire pour l'auto-instrumentation -->
+        <!-- L'agent instrumente automatiquement: traces, métriques et logs -->
 
         <!-- Logback avec encodeur pour JSON (pour Loki) -->
         <dependency>

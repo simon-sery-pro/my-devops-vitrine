@@ -22,8 +22,12 @@ FROM eclipse-temurin:17-jre
 
 WORKDIR /app
 
+# Télécharger l'OpenTelemetry Java Agent
+ADD https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/latest/download/opentelemetry-javaagent.jar /app/opentelemetry-javaagent.jar
+
 # Créer un utilisateur non-root pour sécurité
-RUN groupadd -r spring && useradd -r -g spring spring
+RUN groupadd -r spring && useradd -r -g spring spring && \
+    chown spring:spring /app/opentelemetry-javaagent.jar
 USER spring:spring
 
 # Copier le JAR depuis le stage builder
@@ -39,5 +43,5 @@ ENV JAVA_OPTS="-Xms256m -Xmx512m"
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
   CMD curl -f http://localhost:8080/actuator/health/liveness || exit 1
 
-# Point d'entrée
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
+# Point d'entrée avec OpenTelemetry Java Agent
+ENTRYPOINT ["sh", "-c", "java -javaagent:/app/opentelemetry-javaagent.jar $JAVA_OPTS -jar app.jar"]

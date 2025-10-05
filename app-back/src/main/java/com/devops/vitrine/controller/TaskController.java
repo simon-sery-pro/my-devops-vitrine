@@ -4,6 +4,7 @@ import com.devops.vitrine.model.Task;
 import com.devops.vitrine.service.TaskService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,6 +15,7 @@ import java.util.List;
  * Contrôleur REST pour la gestion des tâches
  * API CRUD complète
  */
+@Slf4j
 @RestController
 @RequestMapping("/api/tasks")
 @RequiredArgsConstructor
@@ -27,7 +29,10 @@ public class TaskController {
      */
     @GetMapping
     public ResponseEntity<List<Task>> getAllTasks() {
-        return ResponseEntity.ok(taskService.getAllTasks());
+        log.info("Fetching all tasks");
+        List<Task> tasks = taskService.getAllTasks();
+        log.debug("Found {} tasks", tasks.size());
+        return ResponseEntity.ok(tasks);
     }
 
     /**
@@ -45,7 +50,9 @@ public class TaskController {
      */
     @PostMapping
     public ResponseEntity<Task> createTask(@Valid @RequestBody Task task) {
+        log.info("Creating new task: {}", task.getTitle());
         Task createdTask = taskService.createTask(task);
+        log.info("Task created successfully with id: {}", createdTask.getId());
         return ResponseEntity.status(HttpStatus.CREATED).body(createdTask);
     }
 
